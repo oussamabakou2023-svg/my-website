@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة مكافآت وقسائم جارينا - واجهة تجريبية</title>
+    <!-- استدعاء خطوط Google العربية (Cairo & Tajawal) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- مكتبة أيقونات Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- مكتبة Confetti للاحتفال عند استلام الكود -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- مكتبة Tesseract.js للتعرف البصري على النصوص (OCR) داخل المتصفح -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        gaming: {
+                            dark: '#090b10',
+                            card: '#111622',
+                            border: '#1e2738',
+                            neon: '#ff3b30', // أحمر جارينا النيون
+                            accent: '#f59e0b', // ذهبي الجواهر
+                            cyan: '#00f0ff',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 10px rgba(255, 59, 48, 0.3)' },
+                            '100%': { boxShadow: '0 0 25px rgba(255, 59, 48, 0.7)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #090b10;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 59, 48, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(245, 158, 11, 0.08), transparent 25%);
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(17, 22, 34, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .step-connector {
+            transition: all 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white">
+
+    <!-- شريط تنبيه علوي يوضح أن الواجهة للمحاكاة فقط -->
+    <div class="bg-gradient-to-l from-red-600/20 via-amber-500/20 to-red-600/20 border-b border-red-500/30 py-2 px-4 text-center text-xs sm:text-sm font-tajawal text-amber-300 flex items-center justify-center gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
+        <span>واجهة عرض تفاعلية (Demo Template) - لا يُطلب إدخال أي كلمات مرور أو بيانات حساسة.</span>
+    </div>
+
+    <!-- الهيدر (Header) -->
+    <header class="w-full max-w-5xl mx-auto px-4 pt-6 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-500 p-0.5 shadow-lg shadow-red-600/20">
+                <div class="w-full h-full bg-gaming-card rounded-[14px] flex items-center justify-center">
+                    <i data-lucide="gamepad-2" class="w-7 h-7 text-red-500"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-wide bg-gradient-to-l from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    مركز قسائم جارينا
+                </h1>
+                <p class="text-xs text-slate-400 font-tajawal">نظام استرداد المكافآت الفوري</p>
+            </div>
+        </div>
+
+        <!-- شارة الحالة -->
+        <div class="flex items-center gap-2 bg-gaming-card border border-gaming-border px-3.5 py-2 rounded-full text-xs sm:text-sm">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 -mr-4.5"></span>
+            <span class="text-slate-300 font-semibold mr-2">حالة الخادم: نشط</span>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="w-full max-w-3xl mx-auto px-4 py-6 flex-grow flex flex-col justify-center">
+        
+        <!-- بطاقة عرض القسيمة المستهدفة -->
+        <div class="glass-panel rounded-3xl p-5 sm:p-6 mb-8 relative overflow-hidden border border-amber-500/20 shadow-2xl">
+            <div class="absolute -left-10 -top-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+                <div class="flex items-center gap-4 text-center sm:text-right flex-col sm:flex-row">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                        <i data-lucide="gem" class="w-8 h-8 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <span class="inline-block px-2.5 py-0.5 rounded-md bg-red-500/20 text-red-400 text-xs font-bold mb-1">
+                            مكافأة موسمية متاحة
+                        </span>
+                        <h2 class="text-lg sm:text-xl font-bold text-white">قسيمة شحن 530 جوهرة + مكافأة إضافية</h2>
+                        <p class="text-xs sm:text-sm text-slate-400 font-tajawal mt-0.5">أكمل الخطوات الثلاث بالأسفل لفتح كود القسيمة الخاص بك</p>
+                    </div>
+                </div>
+                <div class="bg-gaming-dark/80 border border-gaming-border rounded-2xl px-4 py-2.5 text-center shrink-0 w-full sm:w-auto">
+                    <span class="block text-[11px] text-slate-400">عدد القسائم المتبقية</span>
+                    <span class="text-lg font-black text-amber-400 font-mono" id="remaining-vouchers">30 قسيمة</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- شريط تتبع الخطوات (Progress Tracker) -->
+        <div class="mb-8 px-2">
+            <div class="flex items-center justify-between relative">
+                <!-- الخط الخلفي -->
+                <div class="absolute top-1/2 left-0 right-0 h-1 bg-gaming-border -translate-y-1/2 rounded-full z-0"></div>
+                <!-- الخط الملون للتقدم -->
+                <div id="progress-line" class="absolute top-1/2 right-0 h-1 bg-gradient-to-l from-red-500 to-amber-500 -translate-y-1/2 rounded-full z-0 transition-all duration-500" style="width: 0%;"></div>
+
+                <!-- الخطوة 1 -->
+                <div class="relative z-10 flex flex-col items-center gap-2">
+                    <div id="step-indicator-1" class="w-11 h-11 rounded-2xl bg-red-600 text-white font-bold flex items-center justify-center shadow-lg shadow-red-600/40 border-2 border-red-400 transition-all duration-300">
+                        <i data-lucide="user-check" class="w-5 h-5"></i>
+                    </div>
+                    <span id="step-label-1" class="text-xs sm:text-sm font-bold text-white">1. بيانات اللاعب</span>
+                </div>
+
+                <!-- الخطوة 2 -->
+                <div class="relative z-10 flex flex-col items-center gap-2">
+                    <div id="step-indicator-2" class="w-11 h-11 rounded-2xl bg-gaming-card text-slate-500 font-bold flex items-center justify-center border-2 border-gaming-border transition-all duration-300">
+                        <i data-lucide="list-checks" class="w-5 h-5"></i>
+                    </div>
+                    <span id="step-label-2" class="text-xs sm:text-sm font-semibold text-slate-500">2. إتمام المهام</span>
+                </div>
+
+                <!-- الخطوة 3 -->
+                <div class="relative z-10 flex flex-col items-center gap-2">
+                    <div id="step-indicator-3" class="w-11 h-11 rounded-2xl bg-gaming-card text-slate-500 font-bold flex items-center justify-center border-2 border-gaming-border transition-all duration-300">
+                        <i data-lucide="gift" class="w-5 h-5"></i>
+                    </div>
+                    <span id="step-label-3" class="text-xs sm:text-sm font-semibold text-slate-500">3. استلام القسيمة</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- حاوية الخطوات التفاعلية -->
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl border border-gaming-border relative">
+            
+            <!-- ==================== الخطوة الأولى: إدخال معرف اللاعب ==================== -->
+            <div id="step-1-content" class="transition-all duration-300">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center font-bold">1</span>
+                    <h3 class="text-xl font-bold text-white">تحديد حساب اللاعب (محاكاة)</h3>
+                </div>
+                <p class="text-slate-400 text-sm font-tajawal mb-6 leading-relaxed">
+                    أدخل معرف اللاعب (Player ID) الخاص بك لتجهيز القسيمة. <strong class="text-amber-400">ملاحظة:</strong> هذا الحقل للمحاكاة فقط، لا تقم أبداً بإدخال كلمة مرور حسابك في أي موقع.
+                </p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="player-id" class="block text-sm font-bold text-slate-300 mb-2">معرف اللاعب (Player ID)</label>
+                        <div class="relative">
+                            <input type="text" id="player-id" placeholder="مثال: 1234567890" maxlength="15"
+                                class="w-full bg-gaming-dark border border-gaming-border focus:border-red-500 rounded-2xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all text-left dir-ltr font-mono text-lg">
+                            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
+                                <i data-lucide="hash" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p id="id-error" class="text-red-400 text-xs mt-2 hidden flex items-center gap-1">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                            <span>يرجى إدخال معرف لاعب صحيح (أرقام فقط من 5 إلى 15 خانة).</span>
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-300 mb-2">اختر الخادم (Server)</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button type="button" onclick="selectServer(this, 'الشرق الأوسط')" class="server-btn active bg-red-600/20 border-2 border-red-500 text-white rounded-xl py-2.5 px-3 text-xs sm:text-sm font-bold transition-all">
+                                الشرق الأوسط
+                            </button>
+                            <button type="button" onclick="selectServer(this, 'أوروبا')" class="server-btn bg-gaming-dark border border-gaming-border text-slate-400 hover:border-slate-600 rounded-xl py-2.5 px-3 text-xs sm:text-sm font-bold transition-all">
+                                أوروبا
+                            </button>
+                            <button type="button" onclick="selectServer(this, 'عالمي')" class="server-btn bg-gaming-dark border border-gaming-border text-slate-400 hover:border-slate-600 rounded-xl py-2.5 px-3 text-xs sm:text-sm font-bold transition-all">
+                                عالمي
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="btn-step-1" onclick="verifyPlayerId()" class="w-full mt-4 bg-gradient-to-l from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                        <span>التحقق من المعرف والمتابعة</span>
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== الخطوة الثانية: إتمام المهام ==================== -->
+            <div id="step-2-content" class="hidden transition-all duration-300">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-4 border-b border-gaming-border">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">2</span>
+                        <div>
+                            <h3 class="text-lg sm:text-xl font-bold text-white">إتمام مهام التحقق</h3>
+                            <p class="text-xs text-slate-400">أكمل جميع المهام الثلاث لفتح قفل القسيمة</p>
+                        </div>
+                    </div>
+                    <!-- شارة اللاعب المتحقق منه -->
+                    <div class="bg-gaming-dark border border-emerald-500/30 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-slate-300">ID: <strong id="display-player-id" class="text-white font-mono">---</strong></span>
+                        <span class="text-slate-500">|</span>
+                        <span id="display-server" class="text-amber-400 font-bold">الشرق الأوسط</span>
+                    </div>
+                </div>
+
+                <!-- قائمة المهام -->
+                <div class="space-y-3.5 my-6">
+                    <!-- مهمة 1 -->
+                    <div id="task-card-1" class="bg-gaming-dark/90 border border-gaming-border rounded-2xl p-4 sm:p-5 transition-all">
+                        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                            <div class="flex items-start sm:items-center gap-3.5">
+                                <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-1 sm:mt-0">
+                                    <i data-lucide="smartphone" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h4 class="font-bold text-white text-sm sm:text-base">تحميل تطبيق CafeGo وإدخال رمز الدعوة 79UJ</h4>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">تحقق صارم</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 font-tajawal mt-1 leading-relaxed">
+                                        1. حمّل تطبيق <strong class="text-slate-200">CafeGo</strong> من متجر Google Play.<br>
+                                        2. أدخل رمز الدعوة الخاص بي: <span class="text-amber-400 font-mono font-black tracking-wider bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">79UJ</span> داخل التطبيق.<br>
+                                        3. ارفع لقطة شاشة (Screenshot) واضحة تثبت كتابة الرمز <strong class="text-amber-300 font-mono">79UJ</strong> أو حصولك على الدقائق بعد إدخال الرمز. <strong class="text-red-400">النظام صارم: الحد الأقصى 3 محاولات فاشلة قبل الإخراج.</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto shrink-0">
+                                <button type="button" onclick="copyInviteCode(this)" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95" title="نسخ رمز الدعوة 79UJ">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                    <span>نسخ الرمز: 79UJ</span>
+                                </button>
+                                <a id="task-link-1" href="https://play.google.com/store/apps/details?id=com.cafego.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer" onclick="handleDownloadClick()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-md shadow-amber-600/20">
+                                    <span>تحميل التطبيق</span>
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- منطقة رفع لقطة الشاشة (Screenshot) لإثبات إدخال رمز الدعوة 79UJ أو الدقائق -->
+                        <div class="mt-4 pt-4 border-t border-gaming-border/80">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                                <label for="screenshot-input" class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                                    <i data-lucide="image-plus" class="w-4 h-4 text-amber-400"></i>
+                                    <span>إرفاق لقطة شاشة (Screenshot) لإثبات الرمز 79UJ أو الدقائق</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span id="failed-attempts-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/30 font-mono">
+                                        المخالفات: 0 / 3
+                                    </span>
+                                    <span id="screenshot-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-gaming-border">
+                                        بانتظار رفع الصورة
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- حقل الإدخال المخفي للملفات -->
+                            <input type="file" id="screenshot-input" accept="image/*" class="hidden" onchange="handleScreenshotInputChange(event)">
+
+                            <!-- منطقة السحب والإفلات أو النقر لاختيار صورة -->
+                            <div id="screenshot-dropzone"
+                                onclick="document.getElementById('screenshot-input').click()"
+                                ondragover="handleDragOver(event)"
+                                ondragleave="handleDragLeave(event)"
+                                ondrop="handleDrop(event)"
+                                class="border-2 border-dashed border-gaming-border hover:border-amber-500/60 bg-gaming-dark/70 rounded-2xl p-4 text-center cursor-pointer transition-all group">
+                                <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+                                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                                </div>
+                                <p class="text-xs sm:text-sm font-bold text-slate-200">
+                                    اسحب وأفلت لقطة الشاشة هنا أو <span class="text-amber-400 underline underline-offset-2">اختر صورة من جهازك</span>
+                                </p>
+                                <p class="text-[11px] text-slate-500 font-tajawal mt-1">
+                                    يدعم PNG, JPG, WEBP (حد أقصى 5 ميجابايت) - فحص صارم للرمز <span class="text-amber-300 font-mono">79UJ</span> ومؤشرات الدقائق عبر OCR
+                                </p>
+                            </div>
+
+                            <!-- صندوق فحص وتحليل الصورة ومعاينة النتيجة -->
+                            <div id="screenshot-preview-box" class="hidden mt-3 bg-gaming-dark border border-gaming-border rounded-2xl p-3.5 space-y-3 transition-all">
+                                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                                        <img id="screenshot-preview-img" src="" alt="معاينة لقطة الشاشة" class="w-16 h-16 rounded-xl object-cover border border-gaming-border shrink-0 bg-slate-900">
+                                        <div class="min-w-0">
+                                            <div id="ocr-result-headline" class="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+                                                <i data-lucide="scan-search" class="w-4 h-4 shrink-0 animate-pulse"></i>
+                                                <span>جاري فحص وتحليل لقطة الشاشة بصرامة...</span>
+                                            </div>
+                                            <p id="screenshot-file-name" class="text-xs text-slate-300 font-mono truncate mt-0.5 max-w-[200px] sm:max-w-[240px]">screenshot.png</p>
+                                            <p id="screenshot-file-size" class="text-[11px] text-slate-500 font-tajawal">0 KB</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+                                        <button type="button" onclick="document.getElementById('screenshot-input').click()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                            <span>تغيير</span>
+                                        </button>
+                                        <button type="button" onclick="removeScreenshot()" class="px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            <span>إزالة</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- شريط تقدم فحص OCR -->
+                                <div id="ocr-progress-wrapper" class="bg-slate-900/90 border border-gaming-border rounded-xl p-2.5">
+                                    <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                                        <span id="ocr-progress-stage" class="text-amber-300 font-tajawal">تهيئة محرك التعرف البصري (OCR)...</span>
+                                        <span id="ocr-progress-percent" class="text-slate-300 font-mono">0%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                        <div id="ocr-progress-bar" class="h-full bg-gradient-to-l from-red-500 via-amber-400 to-emerald-400 transition-all duration-300 rounded-full" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- صندوق نتيجة التحليل والتنبيهات الصارمة -->
+                                <div id="ocr-feedback-box" class="hidden rounded-xl p-3 text-xs font-tajawal border space-y-2.5">
+                                    <p id="ocr-feedback-message" class="font-bold leading-relaxed"></p>
+
+                                    <!-- عرض النص المستخرج من الصورة إن وجد -->
+                                    <div id="ocr-extracted-wrapper" class="hidden bg-slate-950/80 border border-gaming-border rounded-lg p-2.5">
+                                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                                            <span class="text-[11px] font-bold text-slate-400">النص المقروء من الصورة:</span>
+                                            <div class="flex items-center gap-1.5">
+                                                <span id="ocr-minutes-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">مؤشر دقائق مرصود</span>
+                                                <span id="ocr-match-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300"></span>
+                                            </div>
+                                        </div>
+                                        <pre id="ocr-extracted-text" class="text-[11px] text-slate-200 font-mono whitespace-pre-wrap break-words max-h-24 overflow-y-auto leading-relaxed"></pre>
+                                    </div>
+
+                                    <!-- أزرار الإجبار على الإعادة أو الإخراج الفوري عند الرفض -->
+                                    <div id="ocr-enforcement-actions" class="hidden pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <button type="button" onclick="forceRetryUpload()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black transition-all flex items-center gap-1 cursor-pointer">
+                                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                                <span>إعادة رفع لقطة شاشة صحيحة</span>
+                                            </button>
+                                            <button type="button" onclick="retryOcrAnalysis()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer">
+                                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                                <span>إعادة فحص الصورة</span>
+                                            </button>
+                                        </div>
+
+                                        <button type="button" onclick="kickUserOut('تم إخراجك من الجلسة لعدم إثبات إدخال رمز الدعوة 79UJ بشكل صحيح أو لتجاوز المحاولات المسموحة.')" class="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/35 border border-red-500/40 text-red-300 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer">
+                                            <i data-lucide="user-x" class="w-3.5 h-3.5"></i>
+                                            <span>إخراج من الجلسة</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- أدوات اختبار ومحاكاة السيناريوهات الصارمة للمطور/المجرب -->
+                            <div class="mt-3 bg-slate-900/70 border border-gaming-border/90 rounded-xl p-2.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                                        <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-400"></i>
+                                        <span>محاكاة واختبار السيناريوهات الصارمة:</span>
+                                    </span>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <button type="button" onclick="runScenarioSimulation('valid_with_minutes')" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold transition-all cursor-pointer">
+                                            1. كود 79UJ + دقائق (ناجح)
+                                        </button>
+                                        <button type="button" onclick="runScenarioSimulation('missing_code')" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold transition-all cursor-pointer">
+                                            2. صورة بدون كود (مخالفة)
+                                        </button>
+                                        <button type="button" onclick="runScenarioSimulation('kick_limit')" class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-[11px] font-bold transition-all cursor-pointer">
+                                            3. استنفاد المحاولات وإخراج
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- رسالة خطأ في حال اختيار ملف غير صالح أو كبير جداً -->
+                            <p id="screenshot-error" class="text-red-400 text-xs mt-2 hidden flex items-center gap-1.5">
+                                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                                <span id="screenshot-error-text">يرجى اختيار ملف صورة صالح بحجم أقل من 5 ميجابايت.</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- مهمة 2 -->
+                    <div id="task-card-2" class="bg-gaming-dark/90 border border-gaming-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
+                                <i data-lucide="share-2" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm sm:text-base">مشاركة العرض مع مجتمع اللاعبين</h4>
+                                <p class="text-xs text-slate-400 font-tajawal">محاكاة مشاركة الرابط لتفعيل المكافأة</p>
+                            </div>
+                        </div>
+                        <button id="task-btn-2" onclick="completeTask(2)" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-sky-600 text-white text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                            <span>إتمام الخطوة</span>
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- مهمة 3 -->
+                    <div id="task-card-3" class="bg-gaming-dark/90 border border-gaming-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm sm:text-base">التحقق البشري السريع</h4>
+                                <p class="text-xs text-slate-400 font-tajawal">تأكيد أنك مستخدم حقيقي ولست روبوتاً</p>
+                            </div>
+                        </div>
+                        <button id="task-btn-3" onclick="completeTask(3)" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                            <span>تحقق الآن</span>
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- شريط تقدم المهام -->
+                <div class="bg-gaming-dark rounded-2xl p-4 border border-gaming-border mb-5">
+                    <div class="flex justify-between text-xs font-bold mb-2">
+                        <span class="text-slate-400">نسبة إنجاز المهام</span>
+                        <span id="tasks-percentage" class="text-amber-400">0% (0/3)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="tasks-progress-bar" class="h-full bg-gradient-to-l from-amber-500 to-emerald-500 transition-all duration-500 rounded-full" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- زر الانتقال للخطوة الثالثة (مقفل حتى إتمام المهام) -->
+                <div class="flex items-center gap-3">
+                    <button onclick="goBackToStep1()" class="px-4 py-4 rounded-2xl bg-gaming-dark border border-gaming-border text-slate-400 hover:text-white transition-all cursor-pointer" title="تعديل المعرف">
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    <button id="btn-unlock-voucher" disabled onclick="revealVoucher()" class="w-full py-4 px-6 rounded-2xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2 transition-all cursor-not-allowed">
+                        <i id="lock-icon" data-lucide="lock" class="w-5 h-5"></i>
+                        <span id="unlock-btn-text">أكمل المهام لفتح القسيمة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== الخطوة الثالثة: كشف القسيمة ==================== -->
+            <div id="step-3-content" class="hidden text-center transition-all duration-500">
+                <div class="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-tr from-emerald-500/20 to-amber-500/20 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-bounce">
+                    <i data-lucide="party-popper" class="w-10 h-10 text-emerald-400"></i>
+                </div>
+
+                <span class="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold mb-2">
+                    تم التحقق بنجاح!
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-black text-white mb-2">مبروك! قسيمتك جاهزة</h3>
+                <p class="text-sm text-slate-400 font-tajawal max-w-md mx-auto mb-6">
+                    تم صرف قسيمة من القائمة المعتمدة للمعرف <span id="final-player-id" class="text-white font-mono font-bold"></span>. يمكنك نسخ الكود أدناه واستعماله.
+                </p>
+
+                <!-- صندوق الكود -->
+                <div class="bg-gaming-dark border-2 border-dashed border-amber-500/50 rounded-2xl p-5 max-w-md mx-auto mb-6 relative group">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
+                        <span>كود قسيمة جارينا (غير متكرر)</span>
+                        <span>عدد القسائم المتبقية: <strong id="step3-remaining-vouchers" class="text-amber-400 font-mono">30 قسيمة</strong></span>
+                    </div>
+                    <div id="voucher-code" class="text-xl sm:text-2xl font-mono font-black tracking-widest text-amber-400 select-all py-2">
+                        FF-XK9P-M2LQ-WR8B
+                    </div>
+                    <button onclick="copyVoucherCode()" id="copy-btn" class="mt-3 w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer active:scale-95">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                        <span id="copy-btn-text">نسخ كود القسيمة</span>
+                    </button>
+                </div>
+
+                <!-- تنبيه داخل البطاقة النهائية -->
+                <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 text-xs text-amber-200/90 font-tajawal max-w-md mx-auto mb-6 flex items-start gap-2.5 text-right">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                    <p>تم صرف هذه القسيمة من القائمة المحددة (30 قسيمة) ولا يتم تكرارها أو توليد قسائم عشوائية، كما ينقص عدد القسائم المتبقية في كل مرة يتم فيها الاستعمال.</p>
+                </div>
+
+                <button onclick="resetFlow()" class="text-sm text-slate-400 hover:text-white underline underline-offset-4 transition-all cursor-pointer">
+                    إعادة التجربة من البداية
+                </button>
+            </div>
+
+            <!-- ==================== شاشة الإخراج الصارم (تم إخراجك من الجلسة) ==================== -->
+            <div id="kicked-out-content" class="hidden text-center transition-all duration-300 py-4">
+                <div class="w-20 h-20 mx-auto mb-4 rounded-3xl bg-red-600/20 border-2 border-red-500/50 flex items-center justify-center shadow-lg shadow-red-600/30">
+                    <i data-lucide="shield-alert" class="w-10 h-10 text-red-400"></i>
+                </div>
+
+                <span class="inline-block px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 text-xs font-bold mb-2">
+                    تم إخراجك من الجلسة - مخالفة التحقق الصارم
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-black text-white mb-2">تم إخراجك من النظام!</h3>
+                <p id="kick-reason-text" class="text-sm text-red-200/90 font-tajawal max-w-md mx-auto mb-5 leading-relaxed">
+                    لم يتم إثبات إدخال رمز الدعوة <strong class="font-mono text-amber-300">79UJ</strong> داخل تطبيق CafeGo أو حصولك على الدقائق بعد إدخاله، وتم استنفاد المحاولات المسموحة.
+                </p>
+
+                <div class="bg-gaming-dark border border-red-500/30 rounded-2xl p-4 max-w-md mx-auto mb-6 text-right space-y-2 text-xs font-tajawal text-slate-300">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">الرمز المطلوب الصارم:</span>
+                        <span class="font-mono font-black text-amber-400">79UJ (CafeGo)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">عدد المحاولات الفاشلة:</span>
+                        <span id="kick-attempts-summary" class="font-mono font-bold text-red-400">3 / 3</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 pt-2 border-t border-gaming-border leading-relaxed">
+                        للحصول على القسيمة، قم بتحميل تطبيق CafeGo، واكتب رمز الدعوة <strong class="text-amber-300 font-mono">79UJ</strong> فعلياً، ثم ارفع لقطة شاشة واضحة تثبت ذلك في جلسة جديدة.
+                    </p>
+                </div>
+
+                <button type="button" onclick="resetFlow()" class="w-full max-w-md mx-auto py-4 px-6 rounded-2xl bg-gradient-to-l from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-sm shadow-lg shadow-red-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    <span>بدء جلسة جديدة من البداية</span>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- إشعار منبثق (Toast Notification) بديل عن alert() -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-sm font-bold transition-all duration-300 opacity-0 pointer-events-none translate-y-4 z-50">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span id="toast-message">تم نسخ الكود بنجاح!</span>
+    </div>
+
+    <!-- الفوتر وإخلاء المسؤولية الواضح -->
+    <footer class="w-full border-t border-gaming-border bg-gaming-card/50 py-6 px-4 mt-10">
+        <div class="max-w-4xl mx-auto text-center space-y-2">
+            <p class="text-xs sm:text-sm text-slate-300 font-bold">
+                إخلاء مسؤولية (Disclaimer): هذا الموقع عبارة عن قالب واجهة مستخدم تفاعلية (UI/UX Demo Template) فقط.
+            </p>
+            <p class="text-xs text-slate-500 font-tajawal leading-relaxed max-w-2xl mx-auto">
+                لا يقوم هذا التطبيق بجمع أي بيانات شخصية أو كلمات مرور، ولا يتصل بأي خوادم خارجية، وليس تابعاً لشركة Garena أو Free Fire بأي شكل من الأشكال. جميع الأكواد المعروضة هي نصوص افتراضية للمعاينة البرمجية.
+            </p>
+        </div>
+    </footer>
+
+    <!-- السكربت التفاعلي -->
+    <script>
+        // تفعيل أيقونات Lucide عند تحميل الصفحة
+        lucide.createIcons();
+
+        // متغيرات الحالة (State)
+        const MAX_FAILED_ATTEMPTS = 3;
+        const VOUCHER_POOL = [
+            'FF-XK9P-M2LQ-WR8B',
+            'FF-B7N4-TY6H-P3QW',
+            'FF-Z5M1-KJ8D-FG2V',
+            'FF-H9W3-LN6X-Q4BR',
+            'FF-P2Q8-MK5T-Y7NW',
+            'FF-D4F6-R9J2-VB3X',
+            'FF-N8W1-Q5L7-T6HP',
+            'FF-J3K9-B2M4-X8NQ',
+            'FF-V7R5-P1W6-L9BT',
+            'FF-T2X8-N4Q3-M6KW',
+            'FF-L9P3-W5N2-Q8BX',
+            'FF-Q6W2-T4M9-R7NK',
+            'FF-X8B5-V3L1-P9QT',
+            'FF-M4N7-K2W6-B8RX',
+            'FF-W3Q9-P5L1-T7NB',
+            'FF-K7R2-B6W4-N9MX',
+            'FF-P1T8-L5Q3-W6BN',
+            'FF-R5N9-Q2W7-M4TX',
+            'FF-B8W3-T6L2-P9NQ',
+            'FF-N2Q7-W5R8-L4BX',
+            'FF-T6P9-Q3W5-N8MR',
+            'FF-W4L7-B2N6-Q9TX',
+            'FF-L8N3-P5W1-T7QB',
+            'FF-Q2W9-N6R4-M8LT',
+            'FF-B5T7-W3P2-N9QX',
+            'FF-N9Q4-L6W8-T2RB',
+            'FF-P3W7-N5Q1-L9TX',
+            'FF-W8L2-Q6N4-B7MT',
+            'FF-T4N9-W3P7-Q5LB',
+            'FF-R7Q2-L5W8-N6TX'
+        ];
+        let issuedVoucherIndexes = new Set();
+        let currentAssignedVoucher = null;
+        let currentStep = 1;
+        let isKickedOut = false;
+        let failedVerificationAttempts = 0;
+        let selectedServer = 'الشرق الأوسط';
+        let playerId = '';
+        let uploadedScreenshotUrl = null;
+        let currentScreenshotFile = null;
+        let isAnalyzingScreenshot = false;
+        let completedTasks = {
+            1: false,
+            2: false,
+            3: false
+        };
+
+        // تحديث عداد عدد القسائم المتبقية في الواجهة
+        function updateVoucherCountDisplay() {
+            const remainingCount = Math.max(0, VOUCHER_POOL.length - issuedVoucherIndexes.size);
+            const labelText = `${remainingCount} قسيمة`;
+            const topCounter = document.getElementById('remaining-vouchers');
+            const step3Counter = document.getElementById('step3-remaining-vouchers');
+            if (topCounter) topCounter.textContent = labelText;
+            if (step3Counter) step3Counter.textContent = labelText;
+        }
+
+        // تحديث شارة عداد المحاولات الفاشلة / المخالفات
+        function updateAttemptsBadge() {
+            const badge = document.getElementById('failed-attempts-badge');
+            if (!badge) return;
+            badge.textContent = `المخالفات: ${failedVerificationAttempts} / ${MAX_FAILED_ATTEMPTS}`;
+            if (failedVerificationAttempts >= MAX_FAILED_ATTEMPTS - 1) {
+                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-600/25 text-red-200 border border-red-500/50 font-mono animate-pulse';
+            } else if (failedVerificationAttempts > 0) {
+                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono';
+            } else {
+                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/30 font-mono';
+            }
+        }
+
+        // إخراج المستخدم من الجلسة وعرض شاشة الإخراج الصارم
+        function kickUserOut(reasonMessage) {
+            isKickedOut = true;
+            isAnalyzingScreenshot = false;
+
+            // إخفاء جميع الخطوات وإظهار شاشة الإخراج
+            document.getElementById('step-1-content').classList.add('hidden');
+            document.getElementById('step-2-content').classList.add('hidden');
+            document.getElementById('step-3-content').classList.add('hidden');
+            document.getElementById('kicked-out-content').classList.remove('hidden');
+
+            // تحديث شريط التتبع العلوي ليظهر حالة الرفض/الإخراج
+            document.getElementById('progress-line').style.width = '100%';
+            const step2Ind = document.getElementById('step-indicator-2');
+            step2Ind.className = 'w-11 h-11 rounded-2xl bg-red-600 text-white font-bold flex items-center justify-center shadow-lg shadow-red-600/40 border-2 border-red-400 transition-all duration-300';
+            step2Ind.innerHTML = '<i data-lucide="x" class="w-5 h-5"></i>';
+
+            document.getElementById('kick-reason-text').textContent =
+                reasonMessage || 'تم إخراجك من الجلسة لأن النظام الصارم لم يثبت كتابتك لرمز الدعوة 79UJ أو حصولك على الدقائق بعد إدخاله.';
+            document.getElementById('kick-attempts-summary').textContent = `${failedVerificationAttempts} / ${MAX_FAILED_ATTEMPTS}`;
+
+            lucide.createIcons();
+            showToast('تم إخراجك من الجلسة بسبب عدم إثبات الرمز 79UJ.');
+        }
+
+        // إشعار عند النقر على رابط تحميل تطبيق CafeGo
+        function handleDownloadClick() {
+            if (isKickedOut) return;
+            showToast('تم فتح صفحة تحميل تطبيق CafeGo، أدخل الرمز 79UJ ثم ارفع لقطة شاشة تثبت ذلك.');
+        }
+
+        // معالجة السحب فوق منطقة رفع لقطة الشاشة
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (isKickedOut) return;
+            const dropzone = document.getElementById('screenshot-dropzone');
+            dropzone.classList.add('border-amber-400', 'bg-amber-500/10');
+        }
+
+        // معالجة مغادرة السحب لمنطقة الرفع
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = document.getElementById('screenshot-dropzone');
+            dropzone.classList.remove('border-amber-400', 'bg-amber-500/10');
+        }
+
+        // معالجة إفلات الصورة في منطقة الرفع
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropzone = document.getElementById('screenshot-dropzone');
+            dropzone.classList.remove('border-amber-400', 'bg-amber-500/10');
+            if (isKickedOut) return;
+
+            const files = event.dataTransfer && event.dataTransfer.files;
+            if (files && files.length > 0) {
+                processScreenshotFile(files[0]);
+            }
+        }
+
+        // معالجة اختيار صورة عبر نافذة الملفات
+        function handleScreenshotInputChange(event) {
+            if (isKickedOut) return;
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                processScreenshotFile(files[0]);
+            }
+        }
+
+        // تطبيع النص المستخرج للبحث الصارم عن رمز الدعوة 79UJ
+        function normalizeOcrForCode(rawText) {
+            if (!rawText || typeof rawText !== 'string') return '';
+            const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+            const converted = rawText.replace(/[٠-٩]/g, d => String(arabicDigits.indexOf(d))).toUpperCase();
+            return converted.replace(/[^A-Z0-9]/g, '');
+        }
+
+        // فحص صارم لوجود رمز الدعوة 79UJ ورصد مؤشرات الدقائق/المكافأة بعد إدخال الرمز
+        function evaluateInviteCodePresence(rawText) {
+            const cleanedRaw = (rawText || '').trim();
+            const compactUpper = (rawText || '').toUpperCase().replace(/\s+/g, '');
+            const normalizedAlphaNum = normalizeOcrForCode(rawText);
+
+            // تطابق صارم مع الرمز 79UJ (مع السماح بفراغات بين أحرفه فقط)
+            const directCodeFound = /\b7\s*9\s*U\s*J\b/i.test(cleanedRaw) ||
+                compactUpper.includes('79UJ') ||
+                normalizedAlphaNum.includes('79UJ');
+
+            // رصد مؤشرات الدقائق أو المكافآت المرتبطة بإدخال الرمز
+            const hasMinutesOrReward = /(دقائق|دقيقة|دقايق|minutes?|mins?|points?|نقاط|مكافأة|مكافاه|reward|bonus)/i.test(cleanedRaw);
+
+            return {
+                found: directCodeFound,
+                hasMinutesOrReward,
+                hasAnyText: cleanedRaw.length > 0
+            };
+        }
+
+        // تحديث واجهة المستخدم لحالة المهمة الأولى
+        function setTaskOnePendingState(badgeText, badgeStyleClass, cardComplete) {
+            const badge = document.getElementById('screenshot-status-badge');
+            badge.textContent = badgeText;
+            badge.className = badgeStyleClass;
+
+            const card1 = document.getElementById('task-card-1');
+            if (cardComplete) {
+                card1.classList.remove('border-gaming-border', 'border-red-500/40', 'bg-red-950/10');
+                card1.classList.add('border-emerald-500/40', 'bg-emerald-950/10');
+            } else {
+                card1.classList.remove('border-emerald-500/40', 'bg-emerald-950/10');
+                card1.classList.add('border-gaming-border');
+            }
+
+            completedTasks[1] = cardComplete;
+            updateTasksProgress();
+        }
+
+        // تطبيق نتيجة التحليل الصارم: إما اعتماد الرمز 79UJ أو تسجيل مخالفة وإجبار على الإعادة أو الإخراج
+        function applyVerificationOutcome(isVerified, extractedText, reasonNote, hasMinutesProof = false) {
+            if (isKickedOut) return;
+
+            const headlineEl = document.getElementById('ocr-result-headline');
+            const progressWrapper = document.getElementById('ocr-progress-wrapper');
+            const feedbackBox = document.getElementById('ocr-feedback-box');
+            const feedbackMsg = document.getElementById('ocr-feedback-message');
+            const extractedWrapper = document.getElementById('ocr-extracted-wrapper');
+            const extractedTextEl = document.getElementById('ocr-extracted-text');
+            const matchBadgeEl = document.getElementById('ocr-match-badge');
+            const minutesBadgeEl = document.getElementById('ocr-minutes-badge');
+            const enforcementActions = document.getElementById('ocr-enforcement-actions');
+
+            progressWrapper.classList.add('hidden');
+            feedbackBox.classList.remove('hidden');
+
+            if (extractedText && extractedText.trim().length > 0) {
+                extractedWrapper.classList.remove('hidden');
+                extractedTextEl.textContent = extractedText.trim();
+            } else {
+                extractedWrapper.classList.add('hidden');
+            }
+
+            if (isVerified) {
+                headlineEl.className = 'flex items-center gap-1.5 text-emerald-400 text-xs font-bold';
+                headlineEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i><span>تم التحقق الصارم: تم إثبات الرمز 79UJ</span>`;
+
+                feedbackBox.className = 'rounded-xl p-3 text-xs font-tajawal border border-emerald-500/40 bg-emerald-950/25 text-emerald-200 space-y-2';
+                feedbackMsg.textContent = reasonNote || (hasMinutesProof
+                    ? 'ممتاز! تم تأكيد رمز الدعوة (79UJ) وظهور مؤشر الدقائق/المكافأة في لقطة الشاشة، وتم اعتماد المهمة الأولى.'
+                    : 'تم تأكيد وجود رمز الدعوة (79UJ) بوضوح في لقطة الشاشة وتم اعتماد المهمة الأولى.');
+
+                minutesBadgeEl.classList.toggle('hidden', !hasMinutesProof);
+                matchBadgeEl.textContent = '79UJ: مؤكد';
+                matchBadgeEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+                enforcementActions.classList.add('hidden');
+
+                setTaskOnePendingState(
+                    'مكتمل (الرمز 79UJ مؤكد)',
+                    'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+                    true
+                );
+
+                lucide.createIcons();
+                showToast('تم إثبات رمز الدعوة 79UJ بنجاح!');
+                return;
+            }
+
+            // حالة الرفض الصارم: احتساب محاولة فاشلة / مخالفة
+            failedVerificationAttempts += 1;
+            updateAttemptsBadge();
+            minutesBadgeEl.classList.add('hidden');
+
+            const remainingAttempts = MAX_FAILED_ATTEMPTS - failedVerificationAttempts;
+
+            // إذا تجاوز أو بلغ الحد الأقصى للمحاولات الفاشلة يتم إخراجه فوراً من الجلسة
+            if (failedVerificationAttempts >= MAX_FAILED_ATTEMPTS) {
+                kickUserOut(
+                    `تم إخراجك من الجلسة بعد ${MAX_FAILED_ATTEMPTS} محاولات فاشلة لعدم إثبات كتابة رمز الدعوة (79UJ) أو حصولك على الدقائق بعد إدخاله في تطبيق CafeGo.`
+                );
+                return;
+            }
+
+            // إجباره على الإعادة مع رسالة صارمة توضح عدم كتابة الرمز أو عدم إثبات الدقائق
+            const strictRejectionMessage = reasonNote ||
+                `مرفوض! النظام صارم ولم يجد أنك كتبت رمز الدعوة (79UJ) أو أثبتّ ربح الدقائق بعده. يجب عليك إعادة رفع لقطة شاشة حقيقية وواضحة تُظهر الرمز 79UJ (المتبقي لك ${remainingAttempts} محاولة فقط قبل الإخراج).`;
+
+            headlineEl.className = 'flex items-center gap-1.5 text-red-400 text-xs font-bold';
+            headlineEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 shrink-0"></i><span>مرفوض: لم يتم إثبات الرمز 79UJ (إعادة مطلوبة)</span>`;
+
+            feedbackBox.className = 'rounded-xl p-3 text-xs font-tajawal border border-red-500/40 bg-red-950/25 text-red-200 space-y-2.5';
+            feedbackMsg.textContent = `${strictRejectionMessage} [محاولة فاشلة ${failedVerificationAttempts} من ${MAX_FAILED_ATTEMPTS}]`;
+
+            matchBadgeEl.textContent = '79UJ: غير موجود';
+            matchBadgeEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300';
+            enforcementActions.classList.remove('hidden');
+
+            const card1 = document.getElementById('task-card-1');
+            card1.classList.remove('border-emerald-500/40', 'bg-emerald-950/10', 'border-gaming-border');
+            card1.classList.add('border-red-500/40', 'bg-red-950/10');
+
+            const badge = document.getElementById('screenshot-status-badge');
+            badge.textContent = `مرفوض - أعد المحاولة (${failedVerificationAttempts}/${MAX_FAILED_ATTEMPTS})`;
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40';
+
+            completedTasks[1] = false;
+            updateTasksProgress();
+
+            lucide.createIcons();
+            showToast(`لم يتم العثور على الرمز 79UJ! أعد المحاولة (${failedVerificationAttempts}/${MAX_FAILED_ATTEMPTS}).`);
+        }
+
+        // إجبار المستخدم على إعادة رفع صورة جديدة بعد الرفض
+        function forceRetryUpload() {
+            if (isKickedOut) return;
+            const input = document.getElementById('screenshot-input');
+            input.value = '';
+            currentScreenshotFile = null;
+            isAnalyzingScreenshot = false;
+
+            if (uploadedScreenshotUrl) {
+                URL.revokeObjectURL(uploadedScreenshotUrl);
+                uploadedScreenshotUrl = null;
+            }
+
+            document.getElementById('screenshot-preview-box').classList.add('hidden');
+            document.getElementById('screenshot-dropzone').classList.remove('hidden');
+            document.getElementById('screenshot-error').classList.add('hidden');
+
+            setTaskOnePendingState(
+                'إعادة رفع مطلوبة',
+                'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40',
+                false
+            );
+
+            input.click();
+        }
+
+        // تشغيل سيناريوهات الاختبار والمحاكاة للتحقق الصارم
+        function runScenarioSimulation(scenarioKey) {
+            if (isKickedOut) return;
+
+            // تهيئة صندوق المعاينة لعرض نتيجة المحاكاة بوضوح
+            document.getElementById('screenshot-dropzone').classList.add('hidden');
+            document.getElementById('screenshot-preview-box').classList.remove('hidden');
+            document.getElementById('screenshot-preview-img').src =
+                'https://placehold.co/160x160/111622/f59e0b?text=CafeGo+79UJ';
+
+            if (scenarioKey === 'valid_with_minutes') {
+                document.getElementById('screenshot-file-name').textContent = 'cafego_79uj_minutes_proof.png';
+                document.getElementById('screenshot-file-size').textContent = '412.5 KB';
+                applyVerificationOutcome(
+                    true,
+                    'CafeGo Referral Applied\nInvite Code: 79UJ\nEarned: +15 Minutes / دقائق إضافية',
+                    'تم تأكيد إدخال رمز الدعوة (79UJ) وحصولك على الدقائق بنجاح في لقطة الشاشة.',
+                    true
+                );
+            } else if (scenarioKey === 'missing_code') {
+                document.getElementById('screenshot-file-name').textContent = 'fake_or_incomplete_screenshot.png';
+                document.getElementById('screenshot-file-size').textContent = '288.0 KB';
+                applyVerificationOutcome(
+                    false,
+                    'CafeGo Home Screen\nNo referral code 79UJ entered\n0 Minutes added',
+                    'النظام صارم: الصورة لا تثبت كتابتك لرمز الدعوة (79UJ) أو حصولك على الدقائق بعد إدخاله. أعد رفع لقطة شاشة صحيحة.'
+                );
+            } else if (scenarioKey === 'kick_limit') {
+                failedVerificationAttempts = MAX_FAILED_ATTEMPTS;
+                updateAttemptsBadge();
+                kickUserOut(
+                    'تم إخراجك من الجلسة فوراً بسبب استنفاد المحاولات الصارمة (3/3) دون إثبات كتابة رمز الدعوة 79UJ أو ربح الدقائق.'
+                );
+            }
+        }
+
+        // تشغيل فحص OCR الفعلي على الصورة المرفوعة عبر Tesseract.js
+        async function analyzeScreenshotWithOcr(fileOrUrl) {
+            if (isAnalyzingScreenshot || isKickedOut) return;
+            isAnalyzingScreenshot = true;
+
+            const headlineEl = document.getElementById('ocr-result-headline');
+            const progressWrapper = document.getElementById('ocr-progress-wrapper');
+            const progressBar = document.getElementById('ocr-progress-bar');
+            const progressPercent = document.getElementById('ocr-progress-percent');
+            const progressStage = document.getElementById('ocr-progress-stage');
+            const feedbackBox = document.getElementById('ocr-feedback-box');
+            const enforcementActions = document.getElementById('ocr-enforcement-actions');
+
+            headlineEl.className = 'flex items-center gap-1.5 text-amber-300 text-xs font-bold';
+            headlineEl.innerHTML = `<i data-lucide="scan-search" class="w-4 h-4 shrink-0 animate-spin"></i><span>جاري فحص وتحليل لقطة الشاشة بصرامة...</span>`;
+
+            progressWrapper.classList.remove('hidden');
+            feedbackBox.classList.add('hidden');
+            enforcementActions.classList.add('hidden');
+            progressBar.style.width = '8%';
+            progressPercent.textContent = '8%';
+            progressStage.textContent = 'جاري تحميل محرك التعرف على النصوص (eng+ara)...';
+
+            setTaskOnePendingState(
+                'جاري الفحص الصارم...',
+                'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40',
+                false
+            );
+            lucide.createIcons();
+
+            try {
+                if (typeof Tesseract === 'undefined' || !Tesseract.recognize) {
+                    throw new Error('محرك Tesseract.js غير متاح حالياً في المتصفح.');
+                }
+
+                const result = await Tesseract.recognize(fileOrUrl, 'eng+ara', {
+                    logger: (m) => {
+                        if (m && typeof m.progress === 'number') {
+                            const pct = Math.min(98, Math.max(8, Math.round(m.progress * 100)));
+                            progressBar.style.width = `${pct}%`;
+                            progressPercent.textContent = `${pct}%`;
+
+                            if (m.status === 'loading tesseract core' || m.status === 'initializing tesseract') {
+                                progressStage.textContent = 'تهيئة نواة التعرف البصري...';
+                            } else if (m.status === 'loading language traineddata') {
+                                progressStage.textContent = 'تحميل حزم اللغات العربية والإنجليزية...';
+                            } else if (m.status === 'recognizing text') {
+                                progressStage.textContent = 'قراءة النصوص والرموز والدقائق داخل لقطة الشاشة...';
+                            }
+                        }
+                    }
+                });
+
+                progressBar.style.width = '100%';
+                progressPercent.textContent = '100%';
+                progressStage.textContent = 'اكتمل التحليل البصري.';
+
+                const extractedText = (result && result.data && result.data.text) ? result.data.text : '';
+                const evaluation = evaluateInviteCodePresence(extractedText);
+
+                if (evaluation.found) {
+                    const note = evaluation.hasMinutesOrReward
+                        ? 'تم التحقق الصارم بنجاح: رمز الدعوة (79UJ) ومؤشر الدقائق/المكافأة ظاهران في لقطة الشاشة.'
+                        : 'تم التحقق الصارم بنجاح: تم العثور على رمز الدعوة (79UJ) في لقطة الشاشة.';
+                    applyVerificationOutcome(true, extractedText, note, evaluation.hasMinutesOrReward);
+                } else if (evaluation.hasAnyText) {
+                    applyVerificationOutcome(
+                        false,
+                        extractedText,
+                        'مرفوض! تمت قراءة نص من الصورة ولكن لم يتم العثور على رمز الدعوة (79UJ) أو إثبات إدخاله وحصولك على الدقائق. أعد رفع لقطة شاشة صحيحة.'
+                    );
+                } else {
+                    applyVerificationOutcome(
+                        false,
+                        '',
+                        'مرفوض! لم يتمكن الفحص الصارم من رصد رمز الدعوة (79UJ) في لقطة الشاشة. تأكد من كتابة الرمز 79UJ بوضوح في الصورة وأعد المحاولة.'
+                    );
+                }
+            } catch (error) {
+                console.error('OCR Error:', error);
+                applyVerificationOutcome(
+                    false,
+                    '',
+                    'مرفوض! تعذر إثبات رمز الدعوة (79UJ) تلقائياً من الصورة حالياً. أعد المحاولة بصورة أوضح أو استخدم أدوات الاختبار بالأسفل.'
+                );
+            } finally {
+                isAnalyzingScreenshot = false;
+            }
+        }
+
+        // إعادة تشغيل فحص OCR للصورة الحالية
+        function retryOcrAnalysis() {
+            if (isKickedOut) return;
+            if (!uploadedScreenshotUrl && !currentScreenshotFile) {
+                showToast('يرجى رفع لقطة شاشة أولاً.');
+                return;
+            }
+            analyzeScreenshotWithOcr(currentScreenshotFile || uploadedScreenshotUrl);
+        }
+
+        // التحقق من صحة لقطة الشاشة وعرض المعاينة وبدء الفحص التلقائي
+        function processScreenshotFile(file) {
+            if (isKickedOut) return;
+            const errorEl = document.getElementById('screenshot-error');
+            const errorTextEl = document.getElementById('screenshot-error-text');
+            const maxSizeBytes = 5 * 1024 * 1024; // 5 MB
+
+            if (!file.type || !file.type.startsWith('image/')) {
+                errorTextEl.textContent = 'يرجى اختيار ملف صورة فقط (مثل PNG أو JPG).';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            if (file.size > maxSizeBytes) {
+                errorTextEl.textContent = 'حجم الصورة يتجاوز الحد المسموح به (5 ميجابايت).';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            errorEl.classList.add('hidden');
+
+            if (uploadedScreenshotUrl) {
+                URL.revokeObjectURL(uploadedScreenshotUrl);
+            }
+
+            currentScreenshotFile = file;
+            uploadedScreenshotUrl = URL.createObjectURL(file);
+
+            document.getElementById('screenshot-preview-img').src = uploadedScreenshotUrl;
+            document.getElementById('screenshot-file-name').textContent = file.name;
+            const sizeKB = (file.size / 1024).toFixed(1);
+            document.getElementById('screenshot-file-size').textContent = sizeKB > 1024
+                ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+                : `${sizeKB} KB`;
+
+            document.getElementById('screenshot-dropzone').classList.add('hidden');
+            document.getElementById('screenshot-preview-box').classList.remove('hidden');
+
+            analyzeScreenshotWithOcr(file);
+        }
+
+        // إزالة لقطة الشاشة المرفوعة وإعادة المهمة الأولى لحالة الانتظار
+        function removeScreenshot() {
+            if (isKickedOut) return;
+            const input = document.getElementById('screenshot-input');
+            input.value = '';
+            currentScreenshotFile = null;
+            isAnalyzingScreenshot = false;
+
+            if (uploadedScreenshotUrl) {
+                URL.revokeObjectURL(uploadedScreenshotUrl);
+                uploadedScreenshotUrl = null;
+            }
+
+            document.getElementById('screenshot-preview-box').classList.add('hidden');
+            document.getElementById('screenshot-dropzone').classList.remove('hidden');
+            document.getElementById('screenshot-error').classList.add('hidden');
+            document.getElementById('ocr-feedback-box').classList.add('hidden');
+            document.getElementById('ocr-extracted-wrapper').classList.add('hidden');
+            document.getElementById('ocr-enforcement-actions').classList.add('hidden');
+
+            setTaskOnePendingState(
+                'بانتظار رفع الصورة',
+                'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-gaming-border',
+                false
+            );
+            lucide.createIcons();
+            showToast('تمت إزالة لقطة الشاشة.');
+        }
+
+        // اختيار الخادم في الخطوة الأولى
+        function selectServer(btn, serverName) {
+            selectedServer = serverName;
+            document.querySelectorAll('.server-btn').forEach(b => {
+                b.className = 'server-btn bg-gaming-dark border border-gaming-border text-slate-400 hover:border-slate-600 rounded-xl py-2.5 px-3 text-xs sm:text-sm font-bold transition-all';
+            });
+            btn.className = 'server-btn active bg-red-600/20 border-2 border-red-500 text-white rounded-xl py-2.5 px-3 text-xs sm:text-sm font-bold transition-all';
+        }
+
+        // التحقق من معرف اللاعب في الخطوة الأولى
+        function verifyPlayerId() {
+            if (isKickedOut) return;
+            const input = document.getElementById('player-id');
+            const errorEl = document.getElementById('id-error');
+            const cleanId = input.value.trim();
+
+            if (!/^\d{5,15}$/.test(cleanId)) {
+                errorEl.classList.remove('hidden');
+                input.classList.add('border-red-500');
+                return;
+            }
+
+            errorEl.classList.add('hidden');
+            input.classList.remove('border-red-500');
+            playerId = cleanId;
+
+            document.getElementById('display-player-id').textContent = playerId;
+            document.getElementById('display-server').textContent = selectedServer;
+            document.getElementById('final-player-id').textContent = playerId;
+
+            goToStep(2);
+            showToast('تم تأكيد معرف اللاعب بنجاح!');
+        }
+
+        // الرجوع للخطوة الأولى
+        function goBackToStep1() {
+            if (isKickedOut) return;
+            goToStep(1);
+        }
+
+        // إتمام مهمة (2 أو 3)
+        function completeTask(taskNum) {
+            if (isKickedOut || completedTasks[taskNum]) return;
+            completedTasks[taskNum] = true;
+
+            const card = document.getElementById(`task-card-${taskNum}`);
+            const btn = document.getElementById(`task-btn-${taskNum}`);
+
+            if (card) {
+                card.classList.remove('border-gaming-border');
+                card.classList.add('border-emerald-500/40', 'bg-emerald-950/10');
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.className = 'w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shrink-0 cursor-default';
+                btn.innerHTML = '<span>مكتملة</span><i data-lucide="check-circle-2" class="w-4 h-4"></i>';
+            }
+
+            lucide.createIcons();
+            updateTasksProgress();
+            showToast(`تم إتمام المهمة رقم ${taskNum}.`);
+        }
+
+        // تحديث شريط تقدم المهام وزر فتح القسيمة
+        function updateTasksProgress() {
+            const totalTasks = 3;
+            const doneCount = Object.values(completedTasks).filter(Boolean).length;
+            const percentage = Math.round((doneCount / totalTasks) * 100);
+
+            document.getElementById('tasks-percentage').textContent = `${percentage}% (${doneCount}/${totalTasks})`;
+            document.getElementById('tasks-progress-bar').style.width = `${percentage}%`;
+
+            const unlockBtn = document.getElementById('btn-unlock-voucher');
+            if (doneCount === totalTasks) {
+                unlockBtn.disabled = false;
+                unlockBtn.className = 'w-full py-4 px-6 rounded-2xl bg-gradient-to-l from-emerald-600 to-amber-500 hover:from-emerald-500 hover:to-amber-400 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer active:scale-[0.99]';
+                unlockBtn.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i><span>فتح القسيمة الآن</span>';
+            } else {
+                unlockBtn.disabled = true;
+                unlockBtn.className = 'w-full py-4 px-6 rounded-2xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2 transition-all cursor-not-allowed';
+                unlockBtn.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i><span>أكمل المهام لفتح القسيمة</span>';
+            }
+            lucide.createIcons();
+        }
+
+        // الانتقال إلى الخطوة الثالثة وكشف القسيمة
+        function revealVoucher() {
+            if (isKickedOut) return;
+            const doneCount = Object.values(completedTasks).filter(Boolean).length;
+            if (doneCount < 3) return;
+
+            // صرف قسيمة واحدة فقط من القائمة المحددة وإنقاص العدد في كل مرة تُستعمل فيها
+            if (!currentAssignedVoucher) {
+                const nextIndex = VOUCHER_POOL.findIndex((_, idx) => !issuedVoucherIndexes.has(idx));
+                if (nextIndex !== -1) {
+                    issuedVoucherIndexes.add(nextIndex);
+                    currentAssignedVoucher = VOUCHER_POOL[nextIndex];
+                } else {
+                    currentAssignedVoucher = 'نفدت جميع القسائم (0/30)';
+                }
+            }
+
+            document.getElementById('voucher-code').textContent = currentAssignedVoucher;
+            updateVoucherCountDisplay();
+
+            goToStep(3);
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 90,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        // نسخ رمز الدعوة 79UJ
+        function copyInviteCode(btn) {
+            copyTextToClipboard('79UJ', 'تم نسخ رمز الدعوة 79UJ بنجاح!');
+            if (btn) {
+                const span = btn.querySelector('span');
+                if (span) {
+                    const original = span.textContent;
+                    span.textContent = 'تم النسخ!';
+                    setTimeout(() => {
+                        span.textContent = original;
+                    }, 1800);
+                }
+            }
+        }
+
+        // نسخ كود القسيمة النهائي
+        function copyVoucherCode() {
+            const codeEl = document.getElementById('voucher-code');
+            const textBtn = document.getElementById('copy-btn-text');
+            if (!codeEl) return;
+
+            copyTextToClipboard(codeEl.textContent.trim(), 'تم نسخ كود القسيمة بنجاح!');
+            if (textBtn) {
+                const prev = textBtn.textContent;
+                textBtn.textContent = 'تم النسخ!';
+                setTimeout(() => {
+                    textBtn.textContent = prev;
+                }, 1800);
+            }
+        }
+
+        // نسخ نص إلى الحافظة بشكل متوافق مع iFrame
+        function copyTextToClipboard(text, toastMsg) {
+            try {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                tempInput.setAttribute('readonly', '');
+                tempInput.style.position = 'absolute';
+                tempInput.style.left = '-9999px';
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast(toastMsg);
+            } catch (err) {
+                showToast('تعذر النسخ تلقائياً، يرجى النسخ يدوياً.');
+            }
+        }
+
+        // إظهار إشعار Toast منبثق
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            if (!toast || !msgEl) return;
+
+            msgEl.textContent = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(window.__toastTimer);
+            window.__toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2800);
+        }
+
+        // التنقل بين الخطوات وتحديث شريط التتبع العلوي
+        function goToStep(step) {
+            if (isKickedOut) return;
+            currentStep = step;
+
+            // إخفاء جميع المحتويات
+            document.getElementById('step-1-content').classList.add('hidden');
+            document.getElementById('step-2-content').classList.add('hidden');
+            document.getElementById('step-3-content').classList.add('hidden');
+            document.getElementById('kicked-out-content').classList.add('hidden');
+
+            // إظهار المحتوى الحالي
+            document.getElementById(`step-${step}-content`).classList.remove('hidden');
+
+            // تحديث شريط التقدم العلوي
+            const progressLine = document.getElementById('progress-line');
+            const step1Ind = document.getElementById('step-indicator-1');
+            const step2Ind = document.getElementById('step-indicator-2');
+            const step3Ind = document.getElementById('step-indicator-3');
+            const step1Lbl = document.getElementById('step-label-1');
+            const step2Lbl = document.getElementById('step-label-2');
+            const step3Lbl = document.getElementById('step-label-3');
+
+            step1Ind.innerHTML = '<i data-lucide="user-check" class="w-5 h-5"></i>';
+            step2Ind.innerHTML = '<i data-lucide="list-checks" class="w-5 h-5"></i>';
+            step3Ind.innerHTML = '<i data-lucide="gift" class="w-5 h-5"></i>';
+
+            if (step === 1) {
+                progressLine.style.width = '0%';
+                step1Ind.className = 'w-11 h-11 rounded-2xl bg-red-600 text-white font-bold flex items-center justify-center shadow-lg shadow-red-600/40 border-2 border-red-400 transition-all duration-300';
+                step2Ind.className = 'w-11 h-11 rounded-2xl bg-gaming-card text-slate-500 font-bold flex items-center justify-center border-2 border-gaming-border transition-all duration-300';
+                step3Ind.className = 'w-11 h-11 rounded-2xl bg-gaming-card text-slate-500 font-bold flex items-center justify-center border-2 border-gaming-border transition-all duration-300';
+                step1Lbl.className = 'text-xs sm:text-sm font-bold text-white';
+                step2Lbl.className = 'text-xs sm:text-sm font-semibold text-slate-500';
+                step3Lbl.className = 'text-xs sm:text-sm font-semibold text-slate-500';
+            } else if (step === 2) {
+                progressLine.style.width = '50%';
+                step1Ind.className = 'w-11 h-11 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center shadow-lg shadow-emerald-600/30 border-2 border-emerald-400 transition-all duration-300';
+                step2Ind.className = 'w-11 h-11 rounded-2xl bg-red-600 text-white font-bold flex items-center justify-center shadow-lg shadow-red-600/40 border-2 border-red-400 transition-all duration-300';
+                step3Ind.className = 'w-11 h-11 rounded-2xl bg-gaming-card text-slate-500 font-bold flex items-center justify-center border-2 border-gaming-border transition-all duration-300';
+                step1Lbl.className = 'text-xs sm:text-sm font-bold text-emerald-400';
+                step2Lbl.className = 'text-xs sm:text-sm font-bold text-white';
+                step3Lbl.className = 'text-xs sm:text-sm font-semibold text-slate-500';
+            } else if (step === 3) {
+                progressLine.style.width = '100%';
+                step1Ind.className = 'w-11 h-11 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center border-2 border-emerald-400 transition-all duration-300';
+                step2Ind.className = 'w-11 h-11 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center border-2 border-emerald-400 transition-all duration-300';
+                step3Ind.className = 'w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 font-bold flex items-center justify-center shadow-lg shadow-amber-500/40 border-2 border-amber-300 transition-all duration-300';
+                step1Lbl.className = 'text-xs sm:text-sm font-bold text-emerald-400';
+                step2Lbl.className = 'text-xs sm:text-sm font-bold text-emerald-400';
+                step3Lbl.className = 'text-xs sm:text-sm font-black text-amber-400';
+            }
+
+            lucide.createIcons();
+        }
+
+        // إعادة ضبط التجربة بالكامل
+        function resetFlow() {
+            isKickedOut = false;
+            currentAssignedVoucher = null;
+            failedVerificationAttempts = 0;
+            updateAttemptsBadge();
+
+            completedTasks = { 1: false, 2: false, 3: false };
+            currentScreenshotFile = null;
+            isAnalyzingScreenshot = false;
+            document.getElementById('player-id').value = '';
+
+            // إعادة ضبط حقل لقطة الشاشة الخاص بالمهمة الأولى
+            const screenshotInput = document.getElementById('screenshot-input');
+            if (screenshotInput) screenshotInput.value = '';
+            if (uploadedScreenshotUrl) {
+                URL.revokeObjectURL(uploadedScreenshotUrl);
+                uploadedScreenshotUrl = null;
+            }
+            document.getElementById('screenshot-preview-box').classList.add('hidden');
+            document.getElementById('screenshot-dropzone').classList.remove('hidden');
+            document.getElementById('screenshot-error').classList.add('hidden');
+            document.getElementById('ocr-feedback-box').classList.add('hidden');
+            document.getElementById('ocr-extracted-wrapper').classList.add('hidden');
+            document.getElementById('ocr-enforcement-actions').classList.add('hidden');
+
+            const badge = document.getElementById('screenshot-status-badge');
+            badge.textContent = 'بانتظار رفع الصورة';
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-gaming-border';
+
+            // إعادة ضبط بطاقات المهام
+            const card1 = document.getElementById('task-card-1');
+            card1.className = 'bg-gaming-dark/90 border border-gaming-border rounded-2xl p-4 sm:p-5 transition-all';
+
+            const taskIcons = ['send', 'check'];
+            const taskLabels = ['إتمام الخطوة', 'تحقق الآن'];
+            const hoverColors = ['hover:bg-sky-600', 'hover:bg-emerald-600'];
+
+            for (let i = 2; i <= 3; i++) {
+                const card = document.getElementById(`task-card-${i}`);
+                const btn = document.getElementById(`task-btn-${i}`);
+
+                card.className = 'bg-gaming-dark/90 border border-gaming-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all';
+                btn.disabled = false;
+                btn.className = `w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 ${hoverColors[i-2]} text-white text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer`;
+                btn.innerHTML = `<span>${taskLabels[i-2]}</span><i data-lucide="${taskIcons[i-2]}" class="w-4 h-4"></i>`;
+            }
+
+            // إعادة ضبط شريط التقدم وزر الفتح
+            document.getElementById('tasks-percentage').textContent = '0% (0/3)';
+            document.getElementById('tasks-progress-bar').style.width = '0%';
+            updateVoucherCountDisplay();
+
+            const unlockBtn = document.getElementById('btn-unlock-voucher');
+            unlockBtn.disabled = true;
+            unlockBtn.className = 'w-full py-4 px-6 rounded-2xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2 transition-all cursor-not-allowed';
+            unlockBtn.innerHTML = `<i data-lucide="lock" class="w-5 h-5"></i><span>أكمل المهام لفتح القسيمة</span>`;
+
+            goToStep(1);
+        }
+
+        // تهيئة عداد القسائم عند تحميل الصفحة
+        updateVoucherCountDisplay();
+    </script>
+</body>
+</html>
